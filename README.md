@@ -8,6 +8,7 @@
 - собирает все страницы каталога
 - автоматически обходит пагинацию
 - сохраняет данные в Excel
+- сохраняет данные в SQLite
 - использует `aiohttp` + `asyncio`
 
 ---
@@ -18,13 +19,15 @@
 eco_parser/
 │
 ├── data/
-│   └── output.xlsx
+│   ├── output.xlsx
+│   └── houses.db
 │
-├── client_async.py
-├── filters_async.py
-├── main_async.py
+├── client.py
 ├── parser.py
-├── saver.py
+├── paginator.py
+├── exporter.py
+├── database.py
+├── scraper.py
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -104,7 +107,7 @@ lxml
 # Запуск
 
 ```bash
-python main_async.py
+python scraper.py
 ```
 
 ---
@@ -113,7 +116,7 @@ python main_async.py
 
 Парсер:
 
-1. Отправляет POST запросы на:
+1. Отправляет AJAX запросы
 
 ```txt
 https://eco-city.spb.ru/wp-admin/admin-ajax.php
@@ -124,9 +127,10 @@ https://eco-city.spb.ru/wp-admin/admin-ajax.php
 3. Парсит:
 
 - название
-- площадь
+- общую площадь
+- жилую площадь
 - этажность
-- спальни
+- количество спален
 - размеры
 - цену
 - ссылку
@@ -141,6 +145,114 @@ https://eco-city.spb.ru/wp-admin/admin-ajax.php
 data/output.xlsx
 ```
 
+и:
+
+```txt
+data/houses.db
+```
+
+---
+
+# SQLite Database
+
+Парсер автоматически создает SQLite базу данных.
+
+Файл базы:
+
+```txt
+data/houses.db
+```
+
+---
+
+## Структура таблицы
+
+Таблица:
+
+```sql
+houses
+```
+
+Поля:
+
+| Поле | Тип |
+|---|---|
+| id | INTEGER |
+| title | TEXT |
+| total_area | REAL |
+| living_area | REAL |
+| floors | INTEGER |
+| bedrooms | INTEGER |
+| dimensions | TEXT |
+| price | INTEGER |
+| url | TEXT |
+
+---
+
+## SQL схема
+
+```sql
+CREATE TABLE IF NOT EXISTS houses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    total_area REAL,
+    living_area REAL,
+    floors INTEGER,
+    bedrooms INTEGER,
+    dimensions TEXT,
+    price INTEGER,
+    url TEXT UNIQUE
+);
+```
+
+---
+
+## Примеры SQL запросов
+
+### Получить все дома
+
+```sql
+SELECT * FROM houses;
+```
+
+---
+
+### Найти дома дешевле 2 млн
+
+```sql
+SELECT * FROM houses
+WHERE price < 2000000;
+```
+
+---
+
+### Найти одноэтажные дома
+
+```sql
+SELECT * FROM houses
+WHERE floors = 1;
+```
+
+---
+
+### Найти дома с 3 спальнями
+
+```sql
+SELECT * FROM houses
+WHERE bedrooms = 3;
+```
+
+---
+
+# Просмотр SQLite базы
+
+Базу можно открыть через:
+
+- DB Browser for SQLite
+- DBeaver
+- DataGrip
+- VSCode SQLite Extension
+
 ---
 
 # Используемые технологии
@@ -151,6 +263,7 @@ data/output.xlsx
 - BeautifulSoup4
 - pandas
 - openpyxl
+- SQLite3
 
 ---
 
@@ -181,7 +294,7 @@ aiohttp
 
 ---
 
-## Сохранение Excel
+## Excel Export
 
 Файл автоматически сохраняется в папку:
 
@@ -193,18 +306,33 @@ data/
 
 ---
 
+## SQLite Integration
+
+Данные одновременно сохраняются:
+
+- в Excel
+- в SQLite
+
+Это позволяет выполнять SQL запросы и использовать данные в других проектах.
+
+---
+
 # Возможные улучшения
 
 Можно добавить:
 
 - CSV export
-- SQLite/PostgreSQL
-- Proxy support
+- PostgreSQL
+- Docker
+- FastAPI
+- REST API
 - Retry logic
 - Logging
-- Docker
+- Proxy support
 - CLI arguments
 - Unit tests
 - Scrapy version
+- Telegram Bot
+- Web Dashboard
 
 ---
