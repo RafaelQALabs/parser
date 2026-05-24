@@ -1,0 +1,24 @@
+services:
+
+  db:
+    image: postgres:16
+
+    container_name: postgres_db
+
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: scraper_db
+
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+
+    container_name: scraper_app
+
+    depends_on:
+      - db
+
+    command: sh -c "sleep 10 && python src/scraper.py"
