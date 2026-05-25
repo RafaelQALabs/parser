@@ -1,183 +1,115 @@
-# EcoCity Parser
+# EcoCity Scraper
 
 Асинхронный парсер проектов домов с сайта EcoCity.
 
-Парсер:
-
-- работает через AJAX (`admin-ajax.php`)
-- собирает все страницы каталога
-- автоматически обходит пагинацию
-- сохраняет данные в Excel
-- сохраняет данные в SQLite
-- использует `aiohttp` + `asyncio`
+Проект собирает данные каталога домов через AJAX API, автоматически обходит пагинацию, сохраняет данные в PostgreSQL и экспортирует результат в Excel.
 
 ---
 
-# Структура проекта
+# Features
+
+- Async scraping via `aiohttp`
+- Pagination support
+- AJAX requests (`admin-ajax.php`)
+- PostgreSQL integration
+- Docker support
+- Excel export (`.xlsx`)
+- Data normalization
+- Duplicate protection (`ON CONFLICT DO NOTHING`)
+- Modular architecture
+
+---
+
+# Tech Stack
+
+- Python 3.12
+- asyncio
+- aiohttp
+- BeautifulSoup4
+- pandas
+- openpyxl
+- PostgreSQL
+- psycopg2
+- Docker
+- Docker Compose
+
+---
+
+# Project Structure
 
 ```bash
-eco_parser/
+eco-city-scraper/
 │
 ├── data/
-│   ├── output.xlsx
-│   └── houses.db
+│   └── output.xlsx
 │
-├── client.py
-├── parser.py
-├── paginator.py
-├── exporter.py
-├── database.py
-├── scraper.py
+├── src/
+│   ├── client.py
+│   ├── parser.py
+│   ├── paginator.py
+│   ├── exporter.py
+│   ├── database.py
+│   ├── scraper.py
+│   └── filters.py
+│
+├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
+├── migrate.py
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-# Установка
+# Installation
 
-## 1. Клонировать проект
+## Clone repository
 
 ```bash
 git clone <repo_url>
-cd eco_parser
+cd eco-city-scraper
 ```
 
 ---
 
-## 2. Создать виртуальное окружение
+# Run with Docker
 
-### Linux / macOS
+## Start containers
 
 ```bash
-python3 -m venv venv
+docker compose up -d --build
 ```
 
-### Windows
+## View logs
 
 ```bash
-python -m venv venv
+docker compose logs -f
 ```
 
 ---
 
-## 3. Активировать окружение
+# PostgreSQL
 
-### Linux / macOS
+The project uses PostgreSQL inside Docker.
 
-```bash
-source venv/bin/activate
-```
+Database config:
 
-### Windows CMD
-
-```cmd
-venv\Scripts\activate
-```
-
-### Windows PowerShell
-
-```powershell
-venv\Scripts\Activate.ps1
-```
-
----
-
-## 4. Установить зависимости
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-# requirements.txt
-
-```txt
-aiohttp
-beautifulsoup4
-pandas
-openpyxl
-lxml
-```
-
----
-
-# Запуск
-
-```bash
-python scraper.py
-```
-
----
-
-# Что делает парсер
-
-Парсер:
-
-1. Отправляет AJAX запросы
-
-```txt
-https://eco-city.spb.ru/wp-admin/admin-ajax.php
-```
-
-2. Получает HTML карточек домов
-
-3. Парсит:
-
-- название
-- общую площадь
-- жилую площадь
-- этажность
-- количество спален
-- размеры
-- цену
-- ссылку
-
-4. Проверяет пагинацию
-
-5. Переходит на следующую страницу
-
-6. Сохраняет результат в:
-
-```txt
-data/output.xlsx
-```
-
-и:
-
-```txt
-data/houses.db
-```
-
----
-
-# SQLite Database
-
-Парсер автоматически создает SQLite базу данных.
-
-Файл базы:
-
-```txt
-data/houses.db
-```
-
----
-
-## Структура таблицы
-
-Таблица:
-
-```sql
-houses
-```
-
-Поля:
-
-| Поле | Тип |
+| Variable | Value |
 |---|---|
-| id | INTEGER |
+| DB Name | scraper_db |
+| User | admin |
+| Port | 5432 |
+
+---
+
+# Database Schema
+
+Table: `houses`
+
+| Column | Type |
+|---|---|
+| id | SERIAL |
 | title | TEXT |
 | total_area | REAL |
 | living_area | REAL |
@@ -185,15 +117,15 @@ houses
 | bedrooms | INTEGER |
 | dimensions | TEXT |
 | price | INTEGER |
-| url | TEXT |
+| url | TEXT UNIQUE |
 
 ---
 
-## SQL схема
+# SQL Schema
 
 ```sql
 CREATE TABLE IF NOT EXISTS houses (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     title TEXT,
     total_area REAL,
     living_area REAL,
@@ -207,35 +139,29 @@ CREATE TABLE IF NOT EXISTS houses (
 
 ---
 
-## Примеры SQL запросов
+# Example SQL Queries
 
-### Получить все дома
+## Get all houses
 
 ```sql
 SELECT * FROM houses;
 ```
 
----
-
-### Найти дома дешевле 2 млн
+## Houses cheaper than 2M
 
 ```sql
 SELECT * FROM houses
 WHERE price < 2000000;
 ```
 
----
-
-### Найти одноэтажные дома
+## One-floor houses
 
 ```sql
 SELECT * FROM houses
 WHERE floors = 1;
 ```
 
----
-
-### Найти дома с 3 спальнями
+## Houses with 3 bedrooms
 
 ```sql
 SELECT * FROM houses
@@ -244,95 +170,127 @@ WHERE bedrooms = 3;
 
 ---
 
-# Просмотр SQLite базы
+# What the scraper does
 
-Базу можно открыть через:
+The scraper:
 
-- DB Browser for SQLite
-- DBeaver
-- DataGrip
-- VSCode SQLite Extension
+1. Sends AJAX requests to:
 
----
-
-# Используемые технологии
-
-- Python 3
-- asyncio
-- aiohttp
-- BeautifulSoup4
-- pandas
-- openpyxl
-- SQLite3
-
----
-
-# Особенности
-
-## Асинхронность
-
-Используется:
-
-```python
-asyncio
-aiohttp
+```text
+https://eco-city.spb.ru/wp-admin/admin-ajax.php
 ```
 
-Это позволяет быстрее загружать страницы.
+2. Parses house cards
 
----
+3. Extracts:
 
-## Пагинация
+- title
+- total area
+- living area
+- floors
+- bedrooms
+- dimensions
+- price
+- url
 
-Парсер автоматически определяет:
+4. Detects pagination
 
-```html
-<a class="next page-numbers">
-```
+5. Saves data into:
 
-и продолжает сбор данных.
-
----
-
-## Excel Export
-
-Файл автоматически сохраняется в папку:
-
-```txt
-data/
-```
-
-Если папки нет — она создается автоматически.
-
----
-
-## SQLite Integration
-
-Данные одновременно сохраняются:
-
-- в Excel
-- в SQLite
-
-Это позволяет выполнять SQL запросы и использовать данные в других проектах.
-
----
-
-# Возможные улучшения
-
-Можно добавить:
-
-- CSV export
 - PostgreSQL
-- Docker
-- FastAPI
-- REST API
+- Excel (`data/output.xlsx`)
+
+---
+
+# Output
+
+After execution:
+
+- PostgreSQL table is populated
+- Excel file is generated
+
+Example:
+
+```bash
+DONE: 73
+Saved 73 houses to PostgreSQL
+Saved to data/output.xlsx
+```
+
+---
+
+# Run Without Docker
+
+## Create virtual environment
+
+### Linux / macOS
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### Windows
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+---
+
+## Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Run scraper
+
+```bash
+python src/scraper.py
+```
+
+---
+
+# Future Improvements
+
+Possible improvements:
+
+- FastAPI REST API
+- SQLAlchemy ORM
+- Alembic migrations
 - Retry logic
 - Logging
-- Proxy support
+- Proxy rotation
 - CLI arguments
 - Unit tests
-- Scrapy version
-- Telegram Bot
-- Web Dashboard
+- CI/CD
+- Web dashboard
+- Telegram notifications
 
 ---
+
+# Architecture
+
+```text
+EcoCity Website
+        ↓
+ AJAX Requests
+        ↓
+ Async Scraper
+        ↓
+ Data Parser
+        ↓
+ PostgreSQL
+        ↓
+ Excel Export
+```
+
+---
+
+# Author
+
+Rafael Gima
