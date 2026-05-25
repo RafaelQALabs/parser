@@ -1,6 +1,13 @@
 venv/
 __pycache__/
 *.pyc
-data/output.xlsx
+
+data/
+*.db
+*.xlsx
+
 .idea/
 .vscode/
+
+.env
+.DS_Store
